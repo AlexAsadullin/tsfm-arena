@@ -176,6 +176,15 @@ class ReproduceSettings(BaseModel):
     run_lora_when_downloads_allowed: bool
 
 
+class ReportSettings(BaseModel):
+    seeds: list[int] = Field(min_length=1)
+    rank_losses: list[Literal["pairwise", "listnet", "spearman"]]
+    base_model: str
+    rank_model: str
+    baselines: list[str]
+    tsfm_models: list[str]
+
+
 class Settings(BaseSettings):
     """All tsfm-arena settings. Construct with :func:`load_settings`."""
 
@@ -203,6 +212,7 @@ class Settings(BaseSettings):
     training: TrainingSettings
     kronos: KronosSettings
     reproduce: ReproduceSettings
+    report: ReportSettings
 
     @classmethod
     def settings_customise_sources(

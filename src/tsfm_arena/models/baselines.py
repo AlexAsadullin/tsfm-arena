@@ -119,3 +119,27 @@ class ARRidge:
         resid_q = np.quantile(self._residuals, np.asarray(levels))
         quantiles = (mean_std[:, None] + resid_q[None, :]) * scale[:, None]
         return Forecast(mean_std * scale, quantiles, tuple(levels))
+
+
+class CrossSectionalMomentum:
+    """Classic cross-sectional momentum rule: the score is the mean return over the last ``lookback``
+    bars minus its cross-sectional average, times ``horizon``; Gaussian quantiles around it.
+
+    On the synthetic panel this rule uses the same statistic as the planted signal, so it estimates the
+    best rank IC that any model can reach there.
+    """
+
+    needs_fit = False
+
+    def __init__(self, name: str, lookback: int, context_length: int) -> None:
+        self.name = name
+        self.lookback = lookback
+        self.context_length = max(lookback, context_length)
+
+    def fit(self, history: ReturnPanel, horizon: int) -> None:
+        """Nothing to fit."""
+
+    def predict(self, context: FloatArray, horizon: int, levels: Sequence[float]) -> Forecast:
+        recent = nan_mean(context[:, -self.lookback :])
+        score = horizon * (recent - recent.mean())
+        return gaussian_forecast(score, nan_std(context, _VOL_FLOOR), horizon, levels)

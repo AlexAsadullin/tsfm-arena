@@ -9,7 +9,7 @@ from typing import Any
 
 from tsfm_arena.models import chronos, kronos
 from tsfm_arena.models.base import CutoffViolationError, Forecaster, ModelUnavailableError
-from tsfm_arena.models.baselines import ARRidge, HistoricalMean, RandomWalk
+from tsfm_arena.models.baselines import ARRidge, CrossSectionalMomentum, HistoricalMean, RandomWalk
 from tsfm_arena.models.patchtst import PatchTSTForecaster, load_checkpoint
 from tsfm_arena.models.spec import ModelSpec
 from tsfm_arena.settings import Settings
@@ -44,6 +44,10 @@ class ModelFactory:
         self._pipeline_loader = pipeline_loader
         self._kronos_loader = kronos_loader
 
+    def with_settings(self, settings: Settings) -> ModelFactory:
+        """The same loaders with different settings (e.g. another training seed)."""
+        return ModelFactory(settings, self._pipeline_loader, self._kronos_loader)
+
     def build(self, spec: ModelSpec) -> Forecaster:
         p = spec.params
         if spec.adapter == "random_walk":
@@ -52,6 +56,8 @@ class ModelFactory:
             return HistoricalMean(spec.name, int(p["context_length"]))
         if spec.adapter == "ar_ridge":
             return ARRidge(spec.name, int(p["lags"]), float(p["alpha"]), int(p["train_window"]))
+        if spec.adapter == "xs_momentum":
+            return CrossSectionalMomentum(spec.name, int(p["lookback"]), int(p["context_length"]))
         if spec.adapter == "patchtst":
             return self._patchtst(spec)
         if spec.adapter == "chronos":

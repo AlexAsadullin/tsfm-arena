@@ -19,6 +19,12 @@ models:
     pretraining_cutoff: null
     params: {lags: 10, alpha: 50.0, train_window: 365}
 
+  - name: xs-momentum
+    adapter: xs_momentum
+    pretraining_cutoff: null
+    # Same statistic as the planted synthetic signal: the attainable ceiling on synthetic data.
+    params: {lookback: 5, context_length: 64}
+
   - name: patchtst-finance
     adapter: patchtst
     path: checkpoints/patchtst-finance.pt

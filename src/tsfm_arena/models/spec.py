@@ -13,7 +13,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from tsfm_arena.timeutil import ensure_utc
 
-AdapterName = Literal["random_walk", "historical_mean", "ar_ridge", "patchtst", "chronos", "kronos"]
+AdapterName = Literal[
+    "random_walk", "historical_mean", "ar_ridge", "xs_momentum", "patchtst", "chronos", "kronos"
+]
 
 
 class TrainingSpec(BaseModel):
