@@ -26,8 +26,8 @@ data:
     beta_std: 0.3
     tail_df: 5.0                  # Student-t innovations (fat tails)
     momentum_window: 5            # planted signal: cross-sectional z-score of a k-bar mean
-    signal_ic: 0.08               # planted IC at the first bar
-    signal_halflife: 900          # bars; the signal decays to half its strength
+    signal_ic: 0.12               # planted IC at the first bar
+    signal_halflife: 1500         # bars; the signal decays to half its strength
     symbol_prefix: SYN
     symbol_suffix: "-USDT-PERP"
   local:
