@@ -111,6 +111,7 @@ training:
 
 kronos:
   repo_path: null                 # path to a clone of github.com/shiyu-coder/Kronos
+  bar: "P1D"                      # bar length for the candle timestamps Kronos conditions on
   max_context: 512
   n_paths: 20
   temperature: 1.0

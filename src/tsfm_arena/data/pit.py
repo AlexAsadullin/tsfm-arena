@@ -80,7 +80,8 @@ class PitSource:
         response = self._client.post("/v1/query", json=query.model_dump(), params=params)
         self.query_count += 1
         if response.status_code == httpx.codes.CONFLICT:
-            raise LeakageRejectedError(f"I2 rejected query as leaking: {response.text}", _json_or_empty(response))
+            event = _json_or_empty(response)
+            raise LeakageRejectedError(f"I2 rejected query as leaking: {response.text}", event)
         if response.status_code != httpx.codes.OK:
             raise PitError(f"I2 query failed with {response.status_code}: {response.text[:200]}")
         frame = self._decode(response)

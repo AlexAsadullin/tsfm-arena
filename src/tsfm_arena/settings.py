@@ -164,6 +164,7 @@ class TrainingSettings(BaseModel):
 
 class KronosSettings(BaseModel):
     repo_path: Path | None
+    bar: timedelta
     max_context: int = Field(ge=2)
     n_paths: int = Field(ge=2)
     temperature: float = Field(gt=0)

@@ -11,9 +11,7 @@ from tsfm_arena.data.synthetic import generate_cross_section
 from tsfm_arena.settings import Settings
 
 
-def build_source(
-    settings: Settings, kind: Literal["synthetic", "local", "pit"] | None = None
-) -> DataSource:
+def build_source(settings: Settings, kind: Literal["synthetic", "local", "pit"] | None = None) -> DataSource:
     """Return the source named by ``kind`` (default: ``settings.data.source``)."""
     kind = kind or settings.data.source
     if kind == "synthetic":

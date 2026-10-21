@@ -82,6 +82,6 @@ skip_covered = true
 # These libraries ship no type information and constraints.txt pins no stub packages for them,
 # so mypy treats them as Any. Our own code stays fully strict.
 [[tool.mypy.overrides]]
-module = ["pandas.*", "scipy.*", "pyarrow.*", "chronos.*", "peft.*", "uvicorn.*"]
+module = ["pandas.*", "scipy.*", "pyarrow.*", "chronos.*", "peft.*", "uvicorn.*", "yaml.*"]
 ignore_missing_imports = true
 follow_untyped_imports = false

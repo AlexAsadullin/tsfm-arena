@@ -102,7 +102,7 @@ class ARRidge:
 
     def fit(self, history: ReturnPanel, horizon: int) -> None:
         window = history.returns[-self.train_window :]
-        scale = nan_std(window, _VOL_FLOOR)
+        scale = nan_std(window.T, _VOL_FLOOR)
         x, y = lagged_design(window, self.lags, horizon, scale)
         if x.shape[0] <= self.lags:
             raise ValueError(f"{self.name}: {x.shape[0]} samples are too few to fit {self.lags} lags")
