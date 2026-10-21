@@ -1,0 +1,121 @@
+# Defaults for tsfm-arena. Every key can be overridden by an environment variable with the
+# prefix TSFM_ and "__" as the nested delimiter, e.g. TSFM_EVALUATION__LONG_SHORT__COST_BPS=5.
+# The data root comes from TRADEQ_DATA_DIR (see .env.example); it is never set here.
+
+project_subdir: tsfm-arena
+models_file: models.yaml          # relative to this file's directory
+allow_downloads: false            # TSFM_ALLOW_DOWNLOADS=true lets adapters fetch HF weights
+hf_cache_subdir: cache/huggingface  # relative to the data root, shared by all projects
+device: cpu
+seed: 7
+log_level: INFO
+log_json: false
+
+data:
+  source: synthetic               # synthetic | local | pit
+  symbols: []                     # empty: every symbol the source returns
+  synthetic:
+    n_assets: 30
+    n_periods: 1300
+    start: "2023-01-01T00:00:00Z"
+    period: "P1D"                 # 24/7 crypto-like daily bars
+    seed: 11
+    vol_low: 0.015                # per-period idiosyncratic vol range
+    vol_high: 0.04
+    market_vol: 0.02
+    beta_std: 0.3
+    tail_df: 5.0                  # Student-t innovations (fat tails)
+    momentum_window: 5            # planted signal: cross-sectional z-score of a k-bar mean
+    signal_ic: 0.08               # planted IC at the first bar
+    signal_halflife: 900          # bars; the signal decays to half its strength
+    symbol_prefix: SYN
+    symbol_suffix: "-USDT-PERP"
+  local:
+    path: datasets/synthetic.parquet  # relative to the project data subtree unless absolute
+    time_col: ts
+    symbol_col: symbol
+    value_col: ret
+    value_kind: return            # return (log) | price
+  pit:
+    base_url: http://127.0.0.1:8603
+    dataset: bars_1d
+    timeout_s: 10.0
+    format: arrow                 # arrow | json
+    mode: research
+    time_col: valid_time
+    symbol_col: symbol
+    value_col: close
+    value_kind: price
+    history_start: "2020-01-01T00:00:00Z"
+
+evaluation:
+  horizon: 1                      # bars ahead; target is the cumulative log return
+  step: 1                         # bars between rolling origins
+  context_length: 64
+  min_history: 128                # bars before the first origin
+  embargo: "P30D"                 # an origin is eligible only if origin > cutoff + embargo
+  refit_every: 30                 # origins between refits of history-fitted baselines
+  quantiles: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  periods_per_year: 365.0         # bars per year for annualisation
+  report_contaminated: true       # also score pre-cutoff origins, shown separately, never ranked
+  collapse_threshold: 0.1         # forecast dispersion below this fraction of realised = collapsed
+  long_short:
+    fraction: 0.2                 # top/bottom fraction of the cross-section
+    gross: 2.0                    # gross exposure (1 long + 1 short)
+    cost_bps: 10.0                # per unit of one-way turnover
+  bootstrap:
+    n_resamples: 1000
+    mean_block: 10                # stationary bootstrap expected block length (origins)
+    confidence: 0.90
+    seed: 3
+
+ledger:
+  base_url: http://127.0.0.1:8601
+  mode: auto                      # auto (HTTP, fall back to inbox) | http | inbox
+  timeout_s: 3.0
+  inbox_subdir: research-ledger/inbox  # relative to the data root (contract 6.1)
+  source: s1
+  family_prefix: tsfm-arena
+  actor_kind: robot
+  actor_id: tsfm-arena
+
+service:
+  host: 127.0.0.1
+  port: 8604
+  enforce_cutoff: true            # reject known_at inside a model's pretraining window
+  model_cache_size: 4
+
+training:
+  patchtst:
+    context_length: 64
+    patch_len: 8
+    stride: 8
+    d_model: 32
+    n_heads: 4
+    n_layers: 2
+    d_ff: 64
+    dropout: 0.1
+  epochs: 30
+  dates_per_batch: 16
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  rank_temperature: 1.0
+  lora:
+    r: 4
+    alpha: 8
+    dropout: 0.0
+    target_modules: [q, v]
+    epochs: 3
+    dates_per_batch: 8
+    learning_rate: 0.0005
+
+kronos:
+  repo_path: null                 # path to a clone of github.com/shiyu-coder/Kronos
+  max_context: 512
+  n_paths: 20
+  temperature: 1.0
+  top_p: 0.9
+
+reproduce:
+  source: synthetic
+  run_lora_when_downloads_allowed: true

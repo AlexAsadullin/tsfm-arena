@@ -1,0 +1,71 @@
+# Model registry. Every entry declares a pretraining_cutoff: the last instant whose data may have been
+# seen in training. The arena scores a model only on origins > pretraining_cutoff + embargo.
+# Public TSFMs do not publish training-data cutoffs, so their cutoff is declared conservatively as
+# the public release date. In-house models are trained only on data <= their declared cutoff; the
+# checkpoint stores the real training end and loading fails if it exceeds the declaration.
+models:
+  - name: random-walk
+    adapter: random_walk
+    pretraining_cutoff: null
+    params: {context_length: 64}
+
+  - name: hist-mean
+    adapter: historical_mean
+    pretraining_cutoff: null
+    params: {context_length: 252}
+
+  - name: ar-ridge
+    adapter: ar_ridge
+    pretraining_cutoff: null
+    params: {lags: 10, alpha: 50.0, train_window: 365}
+
+  - name: patchtst-finance
+    adapter: patchtst
+    path: checkpoints/patchtst-finance.pt
+    pretraining_cutoff: "2024-06-30T00:00:00Z"
+    training: {point_loss: mse, rank_loss: none, quantile_weight: 1.0, rank_weight: 0.0}
+
+  - name: patchtst-rank
+    adapter: patchtst
+    path: checkpoints/patchtst-rank.pt
+    pretraining_cutoff: "2024-06-30T00:00:00Z"
+    training:
+      init_from: patchtst-finance
+      point_loss: none
+      rank_loss: listnet
+      quantile_weight: 0.2
+      rank_weight: 1.0
+      epochs: 15
+
+  - name: chronos-bolt-small
+    adapter: chronos
+    hf_id: amazon/chronos-bolt-small
+    pretraining_cutoff: "2024-11-27T00:00:00Z"
+    requires_download: true
+    params: {context_length: 512, input_mode: returns}
+
+  - name: chronos-bolt-small-rank
+    adapter: chronos
+    hf_id: amazon/chronos-bolt-small
+    path: checkpoints/chronos-bolt-small-rank-lora.pt
+    # LoRA is trained on arena data up to this date, which is later than the base model's release.
+    pretraining_cutoff: "2024-12-31T00:00:00Z"
+    requires_download: true
+    params: {context_length: 512, input_mode: returns}
+    training: {init_from: chronos-bolt-small, rank_loss: listnet, quantile_weight: 0.2, rank_weight: 1.0}
+
+  - name: chronos-2
+    adapter: chronos
+    hf_id: amazon/chronos-2
+    pretraining_cutoff: "2025-10-20T00:00:00Z"
+    requires_download: true
+    params: {context_length: 512, input_mode: returns}
+
+  - name: kronos-small
+    adapter: kronos
+    hf_id: NeoQuasar/Kronos-small
+    tokenizer_id: NeoQuasar/Kronos-Tokenizer-base
+    pretraining_cutoff: "2025-08-02T00:00:00Z"
+    requires_download: true
+    enabled: false               # needs a Kronos source checkout (kronos.repo_path)
+    params: {context_length: 512}

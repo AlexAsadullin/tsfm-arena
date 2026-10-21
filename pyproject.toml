@@ -1,0 +1,87 @@
+[project]
+name = "tsfm-arena"
+version = "0.1.0"
+description = "Cutoff-aware benchmark of time-series foundation models on financial returns, scored by decision metrics, with a rank-tuned finance model."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "Alex Asadullin" }]
+dependencies = [
+    "accelerate==1.15.0",
+    "chronos-forecasting==2.3.2",
+    "fastapi==0.156.8",
+    "httpx==0.28.1",
+    "numpy==2.5.4",
+    "pandas==3.0.6",
+    "peft==0.21.2",
+    "pyarrow==26.0.0",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.1",
+    "python-dotenv==1.2.4",
+    "pyyaml==6.0.3",
+    "scipy==1.18.1",
+    "structlog==26.1.0",
+    "torch==2.14.1",
+    "transformers==5.20.2",
+    "typer==0.27.3",
+    "uvicorn==0.54.0",
+]
+
+[project.scripts]
+tsfm-arena = "tsfm_arena.cli:app"
+
+[dependency-groups]
+dev = [
+    "hypothesis==6.170.5",
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==7.1.0",
+    "respx==0.23.1",
+    "ruff==0.17.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tsfm_arena"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "N", "PT", "RET"]
+ignore = ["N803", "N806"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+mypy_path = "src"
+packages = ["tsfm_arena"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not live'"
+markers = ["live: needs network or downloaded model weights (skipped by default)"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning:torch.*"]
+
+[tool.coverage.run]
+source = ["tsfm_arena"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+# These libraries ship no type information and constraints.txt pins no stub packages for them,
+# so mypy treats them as Any. Our own code stays fully strict.
+[[tool.mypy.overrides]]
+module = ["pandas.*", "scipy.*", "pyarrow.*", "chronos.*", "peft.*", "uvicorn.*"]
+ignore_missing_imports = true
+follow_untyped_imports = false
