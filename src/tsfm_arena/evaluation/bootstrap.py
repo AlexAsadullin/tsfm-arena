@@ -45,6 +45,8 @@ def bootstrap_ci(
     seed: int,
 ) -> Interval:
     """Percentile interval of ``statistic`` over stationary-bootstrap resamples of ``values`` (axis 0)."""
+    if values.shape[0] == 0:
+        return Interval(float("nan"), float("nan"), float("nan"))
     clean = values[~np.isnan(values).reshape(values.shape[0], -1).any(axis=1)]
     estimate = statistic(clean) if clean.shape[0] else float("nan")
     if clean.shape[0] < 3:

@@ -114,7 +114,9 @@ def test_build_source_kinds(settings: Settings, panel: ReturnPanel) -> None:
 
 
 def test_synthetic_is_deterministic_and_plants_a_decaying_signal(settings: Settings) -> None:
-    cfg = settings.data.synthetic.model_copy(update={"n_assets": 40, "n_periods": 600, "signal_halflife": 300})
+    cfg = settings.data.synthetic.model_copy(
+        update={"n_assets": 40, "n_periods": 600, "signal_halflife": 300}
+    )
     a, b = generate_cross_section(cfg), generate_cross_section(cfg)
     np.testing.assert_array_equal(a.panel.returns, b.panel.returns)
     assert a.planted_ic[0] == pytest.approx(cfg.signal_ic)

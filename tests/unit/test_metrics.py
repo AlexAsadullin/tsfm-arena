@@ -30,7 +30,9 @@ def test_pinball_and_mae() -> None:
 
 
 def test_spearman_ties_nan_and_degenerate() -> None:
-    assert metrics.spearman(np.array([1.0, 2.0, 3.0, np.nan]), np.array([3.0, 2.0, 1.0, 9.0])) == pytest.approx(-1)
+    assert metrics.spearman(
+        np.array([1.0, 2.0, 3.0, np.nan]), np.array([3.0, 2.0, 1.0, 9.0])
+    ) == pytest.approx(-1)
     assert metrics.spearman(np.array([1.0, 1.0, 2.0]), np.array([1.0, 2.0, 3.0])) == pytest.approx(0.8660254)
     assert np.isnan(metrics.spearman(np.array([1.0, 2.0]), np.array([1.0, 2.0])))
     assert np.isnan(metrics.spearman(np.zeros(4), np.arange(4.0)))

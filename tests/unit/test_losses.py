@@ -15,7 +15,9 @@ def _mask(x: torch.Tensor) -> torch.Tensor:
 def test_pairwise_logistic_closed_form() -> None:
     s = torch.tensor([[0.5, -0.5]])
     y = torch.tensor([[1.0, 0.0]])
-    assert losses.pairwise_logistic_loss(s, y, _mask(s), 1.0).item() == pytest.approx(math.log1p(math.exp(-1)))
+    assert losses.pairwise_logistic_loss(s, y, _mask(s), 1.0).item() == pytest.approx(
+        math.log1p(math.exp(-1))
+    )
     zero = torch.zeros(1, 4)
     loss = losses.pairwise_logistic_loss(zero, torch.arange(4.0)[None], _mask(zero), 1.0)
     assert loss.item() == pytest.approx(math.log(2))

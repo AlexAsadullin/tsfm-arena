@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import torch
 
+from tests.conftest import FIXTURES, tiny_chronos_model
 from tsfm_arena.data.panel import ReturnPanel
 from tsfm_arena.models import chronos, kronos
 from tsfm_arena.models.base import CutoffViolationError, Forecast, ModelUnavailableError, nan_std
@@ -23,7 +24,6 @@ from tsfm_arena.models.patchtst import (
 )
 from tsfm_arena.models.spec import ModelSpec, Registry, load_registry
 from tsfm_arena.settings import Settings
-from tests.conftest import FIXTURES, tiny_chronos_model
 
 LEVELS = [0.1, 0.5, 0.9]
 
@@ -159,7 +159,9 @@ def test_factory_builds_and_refuses(settings: Settings, factory: ModelFactory) -
         factory.build(reg.get("patchtst-finance"))
 
 
-def test_chronos_adapter_with_tiny_bolt(factory: ModelFactory, settings: Settings, rng: np.random.Generator) -> None:
+def test_chronos_adapter_with_tiny_bolt(
+    factory: ModelFactory, settings: Settings, rng: np.random.Generator
+) -> None:
     spec = load_registry(settings.models_path).get("chronos-tiny")
     fc = factory.build(spec)
     ctx = rng.normal(0, 0.02, (4, 40))

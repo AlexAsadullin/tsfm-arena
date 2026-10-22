@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from tests.conftest import tiny_overrides
 from tsfm_arena.settings import Settings, default_settings_file, load_settings
 from tsfm_arena.timeutil import ensure_utc, from_ns, iso, to_ns
-from tests.conftest import tiny_overrides
 
 
 def test_repo_settings_load_with_data_root_from_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
