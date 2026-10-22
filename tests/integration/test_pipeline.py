@@ -63,6 +63,7 @@ def test_report_tables(settings: Settings, factory: ModelFactory) -> None:
     for name in ("patchtst-mse", "patchtst-listnet", "patchtst-listnet-scratch", "ar-ridge", "chronos-tiny"):
         assert f"| {name} |" in tables
     assert "Paired t" in tables
+    assert "| patchtst-mse |" in tables.split("Table 3")[1]
     payload = json.loads(paths["json"].read_text())
     mse = next(s for s in payload["summaries"] if s["name"] == "patchtst-mse")
     assert mse["n_seeds"] == 2 and mse["contaminated_ic"] is not None

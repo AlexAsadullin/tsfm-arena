@@ -60,7 +60,8 @@ def tiny_overrides(data_root: Path) -> dict[str, Any]:
         "report": {
             "seeds": [1, 2],
             "rank_losses": ["listnet"],
-            "baselines": ["random-walk", "ar-ridge"],
+            "baselines": ["random-walk", "ar-ridge", "xs-momentum"],
+            "reference_model": "xs-momentum",
             "tsfm_models": ["chronos-tiny"],
         },
     }

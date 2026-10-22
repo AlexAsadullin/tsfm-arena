@@ -81,6 +81,7 @@ class VariantSummary:
     contaminated_ic: float | None
     ic_series: FloatArray
     origin_ts: IntArray
+    contaminated_ts: IntArray
 
 
 def _nanmean(values: FloatArray, axis: int) -> FloatArray:
@@ -125,6 +126,7 @@ def summarise(
         contaminated_ic=float(np.mean(cont)) if cont else None,
         ic_series=ic_avg,
         origin_ts=eligible[0].origin_ts,
+        contaminated_ts=contaminated[0].origin_ts,
     )
 
 
@@ -154,6 +156,45 @@ def paired_ic_test(a: VariantSummary, b: VariantSummary, settings: Settings) -> 
     return PairedTest(a.name, b.name, int(ok.sum()), interval, float(test.statistic), float(test.pvalue))
 
 
+@dataclass(frozen=True)
+class Inflation:
+    """Rank IC before vs after a model's cutoff, next to the reference rule on the same two windows.
+
+    On synthetic data no model can have memorised outcomes, so the reference ratio measures how much
+    of the gap comes from the decay of the planted signal; the rest is overfitting to training dates.
+    """
+
+    name: str
+    contaminated_ic: float
+    eligible_ic: float
+    reference_contaminated_ic: float
+    reference_eligible_ic: float
+
+
+def _mean_on(ref: VariantSummary, ts: IntArray) -> float:
+    values = ref.ic_series[np.isin(ref.origin_ts, ts)]
+    values = values[~np.isnan(values)]
+    return float(values.mean()) if values.size else float("nan")
+
+
+def inflation_rows(summaries: list[VariantSummary], reference: VariantSummary) -> list[Inflation]:
+    return [
+        Inflation(
+            s.name,
+            s.contaminated_ic,
+            s.ic_seed_mean,
+            _mean_on(reference, s.contaminated_ts),
+            _mean_on(reference, s.origin_ts),
+        )
+        for s in summaries
+        if s.contaminated_ic is not None
+    ]
+
+
+def _ratio(a: float, b: float) -> str:
+    return _fmt(a / b, 2) if b and np.isfinite(a) and np.isfinite(b) else "n/a"
+
+
 def _fmt(v: float | None, d: int = 3) -> str:
     return "n/a" if v is None or not np.isfinite(v) else f"{v:.{d}f}"
 
@@ -163,7 +204,12 @@ def _ci(i: Interval, d: int = 3) -> str:
 
 
 def render_tables(
-    summaries: list[VariantSummary], tests: list[PairedTest], leaderboard_md: str, settings: Settings
+    summaries: list[VariantSummary],
+    tests: list[PairedTest],
+    inflation: list[Inflation],
+    reference: str,
+    leaderboard_md: str,
+    settings: Settings,
 ) -> str:
     pct = round(settings.evaluation.bootstrap.confidence * 100)
     lines = [
@@ -197,7 +243,24 @@ def render_tables(
         f"| {t.a} | {t.b} | {t.n} | {_ci(t.mean_diff, 4)} | {_fmt(t.t_stat, 2)} | {_fmt(t.p_value, 4)} |"
         for t in tests
     ]
-    lines += ["", "## Table 3. Full arena leaderboard of this run", ""]
+    lines += [
+        "",
+        "## Table 3. Look-ahead inflation: rank IC before and after each model's cutoff",
+        "",
+        f"The reference columns score {reference} on the same origins; its ratio is the part of the gap "
+        "that the decay of the planted signal explains.",
+        "",
+        "| Model | IC before cutoff | IC after cutoff | Ratio | Reference IC before | Reference IC after "
+        "| Reference ratio |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    lines += [
+        f"| {r.name} | {_fmt(r.contaminated_ic)} | {_fmt(r.eligible_ic)} | "
+        f"{_ratio(r.contaminated_ic, r.eligible_ic)} | {_fmt(r.reference_contaminated_ic)} | "
+        f"{_fmt(r.reference_eligible_ic)} | {_ratio(r.reference_contaminated_ic, r.reference_eligible_ic)} |"
+        for r in inflation
+    ]
+    lines += ["", "## Table 4. Full arena leaderboard of this run", ""]
     lines += [line.replace("# TSFM Arena leaderboard", "").strip("\n") for line in [leaderboard_md]]
     return "\n".join(lines) + "\n"
 
@@ -246,17 +309,27 @@ def run_report(
         if a in summaries and b in summaries:
             tests.append(paired_ic_test(summaries[a], summaries[b], settings))
 
-    tables = render_tables(list(summaries.values()), tests, render_markdown(result.leaderboard), settings)
+    reference = summaries[rep.reference_model]
+    inflation = inflation_rows(list(summaries.values()), reference)
+    tables = render_tables(
+        list(summaries.values()),
+        tests,
+        inflation,
+        rep.reference_model,
+        render_markdown(result.leaderboard),
+        settings,
+    )
     paths = {"tables": out_dir / "report_tables.md", "json": out_dir / "report.json", **result.paths}
     out_dir.mkdir(parents=True, exist_ok=True)
     paths["tables"].write_text(tables, encoding="utf-8")
     payload = {
         "summaries": [
-            {k: v for k, v in s.__dict__.items() if k != "ic_series"}
+            {k: v for k, v in s.__dict__.items() if k not in {"ic_series", "origin_ts", "contaminated_ts"}}
             | {"ic": s.ic.__dict__, "sharpe": s.sharpe.__dict__}
             for s in summaries.values()
         ],
         "tests": [t.__dict__ | {"mean_diff": t.mean_diff.__dict__} for t in tests],
+        "inflation": [r.__dict__ for r in inflation],
         "trials_logged": result.n_trials_logged,
         "trials_sink": result.trials_sink,
     }

@@ -183,6 +183,7 @@ class ReportSettings(BaseModel):
     rank_model: str
     baselines: list[str]
     tsfm_models: list[str]
+    reference_model: str
 
 
 class Settings(BaseSettings):

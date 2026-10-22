@@ -128,3 +128,4 @@ report:                           # experiments behind docs/report.md (make repo
   rank_model: patchtst-rank       # template for the rank-tuned variants
   baselines: [random-walk, hist-mean, ar-ridge, xs-momentum]
   tsfm_models: [chronos-bolt-small, chronos-2, chronos-bolt-small-rank]
+  reference_model: xs-momentum    # signal ceiling on synthetic data, for the look-ahead table
