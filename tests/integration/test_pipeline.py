@@ -10,8 +10,8 @@ from tsfm_arena.ledger.client import TrialRecord
 from tsfm_arena.models.factory import ModelFactory
 from tsfm_arena.models.spec import ModelSpec
 from tsfm_arena.pipeline.report import run_report
-from tsfm_arena.pipeline.training import train_spec
 from tsfm_arena.pipeline.run import build_ledger, reproduce
+from tsfm_arena.pipeline.training import train_spec
 from tsfm_arena.settings import Settings
 
 
