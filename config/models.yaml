@@ -38,7 +38,7 @@ models:
     training:
       init_from: patchtst-finance
       point_loss: none
-      rank_loss: listnet
+      rank_loss: spearman        # docs/report.md, Decision: keeps forecast scale, unlike pairwise/ListNet
       quantile_weight: 0.2
       rank_weight: 1.0
       epochs: 15
