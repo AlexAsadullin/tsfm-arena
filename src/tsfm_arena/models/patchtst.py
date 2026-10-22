@@ -96,7 +96,7 @@ class PatchTSTForecaster:
             raise ValueError(f"{self.name} was trained for quantile levels {cfg.levels}")
         window = _left_pad(context, cfg.context_length)
         with torch.no_grad():
-            point, quant = self.net(torch.as_tensor(window, dtype=torch.float32))
+            point, quant = self.net(torch.tensor(window, dtype=torch.float32))
         return Forecast(point.double().numpy(), quant.double().numpy(), tuple(levels))
 
 
