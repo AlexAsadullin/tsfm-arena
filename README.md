@@ -4,14 +4,16 @@ tsfm-arena benchmarks time-series forecasting models on cross-sections of asset 
 model only on forecast dates after the model's declared training-data cutoff plus an embargo, and it ranks
 models by decision metrics (rank IC, Sharpe after costs, deflated Sharpe) instead of MSE. On the
 synthetic 30-asset panel, the PatchTST-style model that we trained on finance data reaches a rank IC of
-RESULT_MSE_IC on dates it never saw, but RESULT_MSE_CONT on its own training dates, so an arena without the
-cutoff rule would overstate it by a factor of RESULT_INFLATION. Spec: [S1 in the platform plan](../quant_platform_plan_full.md#s1-financial-time-series-foundation-models).
+0.021 on dates it never saw, but 0.170 on its own training dates, so an arena without the
+cutoff rule would overstate it by a factor of 8. Spec: [S1 in the platform plan](../quant_platform_plan_full.md#s1-financial-time-series-foundation-models).
 
 Terms used below: rank IC is the Spearman correlation between forecasts and realised returns across assets
 on one date, averaged over dates. ICIR is mean IC divided by its standard deviation. DSR (deflated Sharpe
 ratio) is the probability that the true Sharpe ratio exceeds the best Sharpe expected from the number of
 trials run. CRPS (continuous ranked probability score) measures quantile-forecast quality. An origin is a
-forecast date.
+forecast date. MSE is mean squared error. PatchTST is a small Transformer forecaster that reads the return
+history in fixed-length patches. LoRA (low-rank adaptation) fine-tunes a large model by training small
+added matrices while the original weights stay frozen.
 
 ## Quickstart
 
@@ -82,10 +84,22 @@ Contract extensions (optional fields only): 6.5 responses also carry `schema_ver
 ## Key results
 
 Synthetic data (30 assets, 1300 daily bars, planted momentum signal), horizon 1 day, costs 10 bps,
-eligible window 2024-07-31 to 2026-07-23 (722 origins), 90% stationary-bootstrap intervals. Full tables and
+eligible window 2024-07-31 to 2026-07-22 (722 origins), 90% stationary-bootstrap intervals. Full tables and
 tests: [docs/report.md](docs/report.md).
 
-RESULTS_TABLE
+| Result (rank IC unless stated) | Value [90% CI] | Origins |
+|---|---|---|
+| PatchTST, MSE objective, after its cutoff (3 seeds) | 0.021 [0.009, 0.033] | 722 |
+| Same model on its own training dates (mean of 3 seeds) | 0.170 (seeds 0.163 to 0.175) | 450 |
+| PatchTST, soft-Spearman rank-tuning (registry model `patchtst-rank`) | 0.028 [0.018, 0.038] | 722 |
+| Ridge regression on 10 lags (`ar-ridge`) | 0.057 [0.047, 0.067] | 1172 |
+| Chronos-Bolt small, zero-shot | 0.037 [0.024, 0.051] | 572 |
+| Momentum rule that matches the planted signal (ceiling) | 0.097 [0.086, 0.106] | 1172 |
+
+No rank loss beat the MSE model significantly: the paired t-test on per-origin rank IC gives p = 0.14
+(pairwise), 0.20 (soft-Spearman) and 0.87 (ListNet). `patchtst-rank` uses soft-Spearman because it keeps
+forecasts on the return scale (dispersion ratio 0.57, MAE 0.030), while pairwise and ListNet forecasts
+spread 12 to 16 times wider than realised returns.
 
 ## Limitations
 
