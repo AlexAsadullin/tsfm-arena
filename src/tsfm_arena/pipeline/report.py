@@ -82,6 +82,13 @@ class VariantSummary:
     ic_series: FloatArray
 
 
+def _nanmean(values: FloatArray, axis: int) -> FloatArray:
+    """``nanmean`` that returns NaN for all-NaN slices without a warning (e.g. constant forecasts)."""
+    count = (~np.isnan(values)).sum(axis=axis)
+    total = np.nansum(values, axis=axis)
+    return np.where(count > 0, total / np.maximum(count, 1), np.nan)
+
+
 def _ic_series(run: ModelRun) -> FloatArray:
     return metrics.rank_ic_series(run.means, run.realised)
 
@@ -94,10 +101,10 @@ def summarise(
     eligible = [r.subset(r.eligible) for r in runs]
     contaminated = [r.subset(~r.eligible) for r in runs]
     ic_by_seed = np.array([_ic_series(r) for r in eligible])
-    ic_avg = np.nanmean(ic_by_seed, axis=0)
+    ic_avg = _nanmean(ic_by_seed, axis=0)
     net = np.array([e.eligible.net_returns for e in entries if e.eligible is not None]).mean(axis=0)
-    seed_ic = np.nanmean(ic_by_seed, axis=1)
-    cont = [np.nanmean(_ic_series(r)) for r in contaminated if r.origin_ts.size]
+    seed_ic = _nanmean(ic_by_seed, axis=1)
+    cont = [float(_nanmean(_ic_series(r)[None, :], axis=1)[0]) for r in contaminated if r.origin_ts.size]
     dsrs = [d for e in entries if (d := dsr.get(e.spec.name)) is not None]
     disp = [e.eligible.dispersion.ratio for e in entries if e.eligible is not None]
 
