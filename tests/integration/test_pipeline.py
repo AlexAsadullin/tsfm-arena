@@ -8,7 +8,9 @@ import pytest
 
 from tsfm_arena.ledger.client import TrialRecord
 from tsfm_arena.models.factory import ModelFactory
+from tsfm_arena.models.spec import ModelSpec
 from tsfm_arena.pipeline.report import run_report
+from tsfm_arena.pipeline.training import train_spec
 from tsfm_arena.pipeline.run import build_ledger, reproduce
 from tsfm_arena.settings import Settings
 
@@ -81,14 +83,11 @@ def test_lora_training_path_when_downloads_allowed(settings: Settings, factory: 
     assert trained == ["chronos-tiny-rank"]
     forecaster = fac.build(registry.get("chronos-tiny-rank"))
     assert forecaster.name == "chronos-tiny-rank"
+    untrainable = ModelSpec(
+        name="rw", adapter="random_walk", pretraining_cutoff="2024-01-01T00:00:00Z", training={}
+    )
+    panel = source.load(None, None, None).panel
     with pytest.raises(ValueError, match="no training procedure"):
-        from tsfm_arena.pipeline.training import train_spec
-
-        train_spec(
-            registry.get("random-walk").model_copy(
-                update={"training": {}, "pretraining_cutoff": "2024-01-01T00:00:00Z"}
-            ),
-            registry,
-            fac,
-            source.load(None, None, None).panel,
-        )
+        train_spec(untrainable, registry, fac, panel)
+    with pytest.raises(ValueError, match="no training section"):
+        train_spec(registry.get("random-walk"), registry, fac, panel)
