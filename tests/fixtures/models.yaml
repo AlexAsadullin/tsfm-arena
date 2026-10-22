@@ -1,0 +1,49 @@
+# Tiny registry for tests; cutoffs fall inside the 2024 synthetic test panel.
+models:
+  - name: random-walk
+    adapter: random_walk
+    pretraining_cutoff: null
+    params: {context_length: 16}
+  - name: hist-mean
+    adapter: historical_mean
+    pretraining_cutoff: null
+    params: {context_length: 30}
+  - name: ar-ridge
+    adapter: ar_ridge
+    pretraining_cutoff: null
+    params: {lags: 3, alpha: 5.0, train_window: 60}
+  - name: xs-momentum
+    adapter: xs_momentum
+    pretraining_cutoff: null
+    params: {lookback: 3, context_length: 16}
+  - name: patchtst-finance
+    adapter: patchtst
+    path: checkpoints/patchtst-finance.pt
+    pretraining_cutoff: "2024-04-15T00:00:00Z"
+    training: {point_loss: mse, rank_loss: none, quantile_weight: 1.0, rank_weight: 0.0}
+  - name: patchtst-rank
+    adapter: patchtst
+    path: checkpoints/patchtst-rank.pt
+    pretraining_cutoff: "2024-04-15T00:00:00Z"
+    training: {init_from: patchtst-finance, rank_loss: listnet, quantile_weight: 0.2, rank_weight: 1.0, epochs: 1}
+  - name: chronos-tiny
+    adapter: chronos
+    hf_id: test/chronos-tiny
+    pretraining_cutoff: "2024-03-01T00:00:00Z"
+    requires_download: true
+    params: {context_length: 32, input_mode: returns}
+  - name: chronos-tiny-rank
+    adapter: chronos
+    hf_id: test/chronos-tiny
+    path: checkpoints/chronos-tiny-rank.pt
+    pretraining_cutoff: "2024-04-15T00:00:00Z"
+    requires_download: true
+    params: {context_length: 32, input_mode: returns}
+    training: {init_from: chronos-tiny, rank_loss: pairwise, quantile_weight: 0.2, rank_weight: 1.0}
+  - name: kronos-small
+    adapter: kronos
+    hf_id: test/kronos
+    tokenizer_id: test/kronos-tokenizer
+    pretraining_cutoff: "2024-03-01T00:00:00Z"
+    enabled: false
+    params: {context_length: 32}
