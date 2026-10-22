@@ -319,7 +319,8 @@ def run_report(
         render_markdown(result.leaderboard),
         settings,
     )
-    paths = {"tables": out_dir / "report_tables.md", "json": out_dir / "report.json", **result.paths}
+    # The arena paths come first, so its leaderboard "json" key cannot replace the report payload.
+    paths = {**result.paths, "tables": out_dir / "report_tables.md", "report_json": out_dir / "report.json"}
     out_dir.mkdir(parents=True, exist_ok=True)
     paths["tables"].write_text(tables, encoding="utf-8")
     payload = {
@@ -333,5 +334,5 @@ def run_report(
         "trials_logged": result.n_trials_logged,
         "trials_sink": result.trials_sink,
     }
-    paths["json"].write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    paths["report_json"].write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     return paths

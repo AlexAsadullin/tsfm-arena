@@ -64,7 +64,9 @@ def test_report_tables(settings: Settings, factory: ModelFactory) -> None:
         assert f"| {name} |" in tables
     assert "Paired t" in tables
     assert "| patchtst-mse |" in tables.split("Table 3")[1]
-    payload = json.loads(paths["json"].read_text())
+    assert paths["report_json"].name == "report.json"
+    assert json.loads(paths["json"].read_text())["schema_version"] == "1"  # leaderboard left intact
+    payload = json.loads(paths["report_json"].read_text())
     mse = next(s for s in payload["summaries"] if s["name"] == "patchtst-mse")
     assert mse["n_seeds"] == 2 and mse["contaminated_ic"] is not None
     assert {t["a"] for t in payload["tests"]} >= {"patchtst-listnet", "patchtst-mse"}
