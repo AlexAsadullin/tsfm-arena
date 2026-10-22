@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import ttest_rel
 
-from tsfm_arena.data.panel import FloatArray
+from tsfm_arena.data.panel import FloatArray, IntArray
 from tsfm_arena.evaluation import metrics
 from tsfm_arena.evaluation.arena import ModelRun
 from tsfm_arena.evaluation.bootstrap import Interval, bootstrap_ci
@@ -80,6 +80,7 @@ class VariantSummary:
     dispersion: float
     contaminated_ic: float | None
     ic_series: FloatArray
+    origin_ts: IntArray
 
 
 def _nanmean(values: FloatArray, axis: int) -> FloatArray:
@@ -123,6 +124,7 @@ def summarise(
         dispersion=float(np.mean(disp)) if disp else float("nan"),
         contaminated_ic=float(np.mean(cont)) if cont else None,
         ic_series=ic_avg,
+        origin_ts=eligible[0].origin_ts,
     )
 
 
@@ -137,11 +139,12 @@ class PairedTest:
 
 
 def paired_ic_test(a: VariantSummary, b: VariantSummary, settings: Settings) -> PairedTest:
-    """Student's paired t-test on per-origin IC differences (H0: mean difference is zero), plus a
-    stationary-bootstrap CI of the mean difference that allows for serial dependence."""
+    """Student's paired t-test on per-origin IC differences over the origins both series share
+    (H0: mean difference is zero), plus a stationary-bootstrap CI of the mean difference that allows
+    for serial dependence."""
     boot = settings.evaluation.bootstrap
-    n = min(a.ic_series.size, b.ic_series.size)
-    x, y = a.ic_series[-n:], b.ic_series[-n:]
+    _, ia, ib = np.intersect1d(a.origin_ts, b.origin_ts, return_indices=True)
+    x, y = a.ic_series[ia], b.ic_series[ib]
     ok = ~(np.isnan(x) | np.isnan(y))
     test = ttest_rel(x[ok], y[ok])
     diff = x[ok] - y[ok]
@@ -237,6 +240,8 @@ def run_report(
     pairs = [(f"patchtst-{loss}", "patchtst-mse") for loss in rep.rank_losses]
     pairs += [("patchtst-listnet", "patchtst-listnet-scratch"), ("patchtst-mse", "ar-ridge")]
     pairs += [(f"patchtst-{loss}", "ar-ridge") for loss in rep.rank_losses]
+    pairs += [(f"{m}-rank", m) for m in rep.tsfm_models]
+    pairs += [(m, "patchtst-mse") for m in rep.tsfm_models] + [(m, "ar-ridge") for m in rep.tsfm_models]
     for a, b in pairs:
         if a in summaries and b in summaries:
             tests.append(paired_ic_test(summaries[a], summaries[b], settings))
